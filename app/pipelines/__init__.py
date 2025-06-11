@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from functools import wraps
 
 from .. import db
-from ..models import Pipeline, Stage, ApiKey
+from ..models import Pipeline, Stage, Negotiation, ApiKey
 
 pipelines_bp = Blueprint('pipelines', __name__)
 
@@ -13,6 +13,17 @@ def get_current_user():
         return None
     api_key = ApiKey.query.filter_by(key=token).first()
     return api_key.user if api_key else None
+
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        g.current_user = user
+        return f(*args, **kwargs)
+    return wrapper
 
 
 def supervisor_required(f):
@@ -182,6 +193,117 @@ def reorder_stages(pipeline_id):
         return jsonify({'error': 'Invalid stages'}), 400
     for position, sid in enumerate(ids, start=1):
         Stage.query.filter_by(id=sid).update({'position': position})
+    db.session.commit()
+    return '', 204
+
+
+def can_edit_negotiation(user, negotiation):
+    if user.role == 'supervisor':
+        return negotiation.stage.pipeline.account_id == user.account_id
+    return negotiation.owner_id == user.user_id
+
+
+@pipelines_bp.route('/pipelines/<int:pipeline_id>/negotiations', methods=['GET'])
+@login_required
+@pipeline_access_required
+def list_pipeline_negotiations(pipeline_id):
+    stages = Stage.query.filter_by(pipeline_id=pipeline_id).all()
+    negotiations = (Negotiation.query
+                    .filter(Negotiation.stage_id.in_([s.id for s in stages]))
+                    .order_by(Negotiation.position)
+                    .all())
+    return jsonify([{'id': n.id, 'title': n.title, 'stage_id': n.stage_id} for n in negotiations])
+
+
+@pipelines_bp.route('/pipelines/<int:pipeline_id>/stages/<int:stage_id>/negotiations', methods=['GET'])
+@login_required
+@pipeline_access_required
+def list_stage_negotiations(pipeline_id, stage_id):
+    stage = Stage.query.get_or_404(stage_id)
+    if stage.pipeline_id != pipeline_id:
+        return jsonify({'error': 'Invalid stage'}), 400
+    negotiations = Negotiation.query.filter_by(stage_id=stage_id).order_by(Negotiation.position).all()
+    return jsonify([{'id': n.id, 'title': n.title} for n in negotiations])
+
+
+@pipelines_bp.route('/negotiations/<int:negotiation_id>', methods=['GET'])
+@login_required
+def get_negotiation(negotiation_id):
+    negotiation = Negotiation.query.get_or_404(negotiation_id)
+    user = g.current_user
+    if negotiation.stage.pipeline.account_id != user.account_id:
+        return jsonify({'error': 'Forbidden'}), 403
+    return jsonify({'id': negotiation.id, 'title': negotiation.title,
+                    'stage_id': negotiation.stage_id, 'owner_id': negotiation.owner_id})
+
+
+@pipelines_bp.route('/negotiations/<int:negotiation_id>', methods=['PUT'])
+@login_required
+def update_negotiation(negotiation_id):
+    negotiation = Negotiation.query.get_or_404(negotiation_id)
+    user = g.current_user
+    if not can_edit_negotiation(user, negotiation):
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json() or {}
+    title = data.get('title')
+    if title:
+        negotiation.title = title
+    db.session.commit()
+    return jsonify({'id': negotiation.id, 'title': negotiation.title})
+
+
+@pipelines_bp.route('/negotiations/<int:negotiation_id>/move', methods=['POST'])
+@login_required
+def move_negotiation(negotiation_id):
+    negotiation = Negotiation.query.get_or_404(negotiation_id)
+    user = g.current_user
+    if not can_edit_negotiation(user, negotiation):
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json() or {}
+    new_stage_id = data.get('stage_id')
+    position = data.get('position')
+    if new_stage_id is None:
+        return jsonify({'error': 'stage_id required'}), 400
+    new_stage = Stage.query.get_or_404(new_stage_id)
+    if new_stage.pipeline.account_id != user.account_id:
+        return jsonify({'error': 'Forbidden'}), 403
+    negotiation.stage_id = new_stage_id
+    if position is not None:
+        if not isinstance(position, int) or position < 1:
+            return jsonify({'error': 'Invalid position'}), 400
+        Negotiation.query.filter(
+            Negotiation.stage_id == new_stage_id,
+            Negotiation.position >= position
+        ).update({
+            'position': Negotiation.position + 1
+        }, synchronize_session=False)
+        negotiation.position = position
+    else:
+        max_pos = db.session.query(db.func.max(Negotiation.position)).filter_by(stage_id=new_stage_id).scalar() or 0
+        negotiation.position = max_pos + 1
+    db.session.commit()
+    return jsonify({'id': negotiation.id, 'stage_id': negotiation.stage_id})
+
+
+@pipelines_bp.route('/stages/<int:stage_id>/negotiations/reorder', methods=['POST'])
+@login_required
+def reorder_negotiations(stage_id):
+    stage = Stage.query.get_or_404(stage_id)
+    user = g.current_user
+    if stage.pipeline.account_id != user.account_id:
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json() or {}
+    ids = data.get('negotiation_ids')
+    if not ids or not isinstance(ids, list):
+        return jsonify({'error': 'negotiation_ids must be a list'}), 400
+    negotiations = Negotiation.query.filter(Negotiation.id.in_(ids), Negotiation.stage_id == stage_id).all()
+    if len(negotiations) != len(ids):
+        return jsonify({'error': 'Invalid negotiations'}), 400
+    if user.role != 'supervisor':
+        if any(n.owner_id != user.user_id for n in negotiations):
+            return jsonify({'error': 'Forbidden'}), 403
+    for pos, nid in enumerate(ids, start=1):
+        Negotiation.query.filter_by(id=nid).update({'position': pos})
     db.session.commit()
     return '', 204
 
