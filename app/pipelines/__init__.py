@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify, g
 from functools import wraps
 
 from .. import db
-from ..models import Pipeline, Stage, Negotiation, ApiKey
+from ..models import Pipeline, Stage, Negotiation, ApiKey, User
+from datetime import datetime
 
 pipelines_bp = Blueprint('pipelines', __name__)
 
@@ -306,4 +307,80 @@ def reorder_negotiations(stage_id):
         Negotiation.query.filter_by(id=nid).update({'position': pos})
     db.session.commit()
     return '', 204
+
+
+@pipelines_bp.route('/pipelines/<int:pipeline_id>/kpis', methods=['GET'])
+@login_required
+@pipeline_access_required
+def pipeline_kpis(pipeline_id):
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    seller_id = request.args.get('seller_id')
+
+    query = (Negotiation.query
+             .join(Stage)
+             .filter(Stage.pipeline_id == pipeline_id))
+
+    if seller_id:
+        query = query.filter(Negotiation.owner_id == int(seller_id))
+
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+        except ValueError:
+            return jsonify({'error': 'Invalid start_date'}), 400
+        query = query.filter(Negotiation.created_at >= start_dt)
+
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+        except ValueError:
+            return jsonify({'error': 'Invalid end_date'}), 400
+        query = query.filter(Negotiation.created_at <= end_dt)
+
+    total_value = query.with_entities(db.func.coalesce(db.func.sum(Negotiation.value), 0)).scalar() or 0
+    total_open = query.filter(Negotiation.status == 'open').count()
+    total_count = query.count()
+    won_count = query.filter(Negotiation.status == 'won').count()
+    win_rate = won_count / total_count if total_count else 0
+
+    deals_per_stage = (
+        db.session.query(Stage.name, db.func.count(Negotiation.id))
+        .join(Negotiation)
+        .filter(Stage.pipeline_id == pipeline_id)
+    )
+    if seller_id:
+        deals_per_stage = deals_per_stage.filter(Negotiation.owner_id == int(seller_id))
+    if start_date:
+        deals_per_stage = deals_per_stage.filter(Negotiation.created_at >= start_dt)
+    if end_date:
+        deals_per_stage = deals_per_stage.filter(Negotiation.created_at <= end_dt)
+    deals_per_stage = deals_per_stage.group_by(Stage.name).all()
+    deals_per_stage = [{'stage': name, 'count': count} for name, count in deals_per_stage]
+
+    value_per_seller = (
+        db.session.query(User.user_id, User.user_name, db.func.coalesce(db.func.sum(Negotiation.value), 0))
+        .join(Negotiation, Negotiation.owner_id == User.user_id)
+        .join(Stage, Negotiation.stage_id == Stage.id)
+        .filter(Stage.pipeline_id == pipeline_id)
+    )
+    if start_date:
+        value_per_seller = value_per_seller.filter(Negotiation.created_at >= start_dt)
+    if end_date:
+        value_per_seller = value_per_seller.filter(Negotiation.created_at <= end_dt)
+    if seller_id:
+        value_per_seller = value_per_seller.filter(User.user_id == int(seller_id))
+    value_per_seller = value_per_seller.group_by(User.user_id, User.user_name).all()
+    value_per_seller = [
+        {'seller_id': uid, 'seller_name': uname, 'value': float(val)}
+        for uid, uname, val in value_per_seller
+    ]
+
+    return jsonify({
+        'total_value': float(total_value),
+        'open_deals': total_open,
+        'win_rate': win_rate,
+        'deals_per_stage': deals_per_stage,
+        'value_per_seller': value_per_seller
+    })
 
