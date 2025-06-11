@@ -68,6 +68,10 @@ class Negotiation(db.Model):
     position = db.Column(db.Integer)
     stage_id = db.Column(db.Integer, db.ForeignKey('stages.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    value = db.Column(db.Numeric(10, 2), default=0)
+    status = db.Column(db.String(20), default='open')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    closed_at = db.Column(db.DateTime)
 
     stage = db.relationship('Stage', back_populates='negotiations')
     owner = db.relationship('User')
