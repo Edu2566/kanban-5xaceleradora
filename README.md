@@ -46,24 +46,20 @@ This will create all required tables in the Postgres database.
 ### Obtaining an API token via Chatwoot
 
 Chatwoot can call the `/auth/webhook` endpoint when an agent signs in. The
-endpoint expects the following JSON payload:
+endpoint now expects the required fields as query parameters:
 
-```json
-{
-  "account_id": 1,
-  "user_id": 10,
-  "user_email": "agent@example.com",
-  "user_name": "Agent Smith"
-}
+```text
+account_id
+user_id
+user_email
+user_name
 ```
 
 The response contains a token that should be stored as a Chatwoot attribute so it
 can be used for subsequent API calls:
 
 ```bash
-curl -X POST http://localhost:5000/auth/webhook \
-     -H 'Content-Type: application/json' \
-     -d '{"account_id":1,"user_id":10,"user_email":"agent@example.com","user_name":"Agent Smith"}'
+curl "http://localhost:5000/auth/webhook?account_id=1&user_id=10&user_email=agent@example.com&user_name=Agent%20Smith"
 ```
 
 Response:

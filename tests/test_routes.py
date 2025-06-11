@@ -27,7 +27,7 @@ def get_token(client):
         'user_email': 'test@example.com',
         'user_name': 'Tester'
     }
-    response = client.post('/auth/webhook', json=payload)
+    response = client.get('/auth/webhook', query_string=payload)
     assert response.status_code == 200
     token = response.get_json()['token']
     # Promote user to supervisor
@@ -43,7 +43,7 @@ def test_auth_webhook_creates_user(client):
         'user_email': 'new@example.com',
         'user_name': 'New User'
     }
-    response = client.post('/auth/webhook', json=payload)
+    response = client.get('/auth/webhook', query_string=payload)
     assert response.status_code == 200
     data = response.get_json()
     assert 'token' in data
