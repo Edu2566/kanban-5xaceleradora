@@ -19,6 +19,9 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    # Import models so they are registered with SQLAlchemy before migrations
+    from . import models  # noqa: F401
+
     from .routes import main_bp
     app.register_blueprint(main_bp)
 
