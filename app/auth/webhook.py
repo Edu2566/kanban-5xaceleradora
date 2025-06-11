@@ -8,7 +8,9 @@ from . import auth_bp
 
 @auth_bp.route('/auth/webhook', methods=['POST'])
 def auth_webhook():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True)
+    if not data:
+        data = request.form.to_dict() if request.form else {}
     required_fields = ['account_id', 'user_id', 'user_email', 'user_name']
     missing = [field for field in required_fields if field not in data]
     if missing:
