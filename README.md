@@ -14,10 +14,14 @@ pip install -r requirements.txt
 ```
 
 2. Configure the database by setting the `DATABASE_URL` environment variable. By
-default the Docker setup uses a local Postgres instance:
+default the Docker setup uses a local Postgres instance. For local testing you
+can skip Docker entirely and rely on SQLite, which is the default when no
+`DATABASE_URL` is provided:
 
 ```
-DATABASE_URL=postgresql://kanban:kanban@db:5432/kanban
+DATABASE_URL=postgresql://kanban:kanban@db:5432/kanban  # Postgres via Docker
+# or
+DATABASE_URL=sqlite:///app.db                          # Local SQLite file
 ```
 
 ## Running with Docker
@@ -43,20 +47,18 @@ This will create all required tables in the Postgres database.
 
 ### Using SQLite for testing
 
-A separate `docker-compose.sqlite.yml` file can be used to run the API with
-SQLite instead of Postgres. Start the service with:
+You can run the API directly with SQLite without Docker. Simply ensure no
+`DATABASE_URL` is set (or set it to `sqlite:///app.db`), run the migrations and
+start the server:
 
 ```bash
-docker-compose -f docker-compose.sqlite.yml up --build
+export DATABASE_URL=sqlite:///app.db
+flask db upgrade
+python run.py
 ```
 
-After the container is running apply the migrations:
-
-```bash
-docker-compose -f docker-compose.sqlite.yml exec backend flask db upgrade
-```
-
-This will create an `app.db` file inside the persistent volume.
+The commands above will create an `app.db` file in the project directory and run
+the API locally on `http://localhost:5000`.
 
 ## API usage
 
