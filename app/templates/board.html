@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+{% block title %}Kanban Board{% endblock %}
+{% block content %}
+<div id="board" class="board"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  loadBoard();
+</script>
+{% endblock %}
