@@ -38,6 +38,17 @@ def supervisor_required(f):
     return wrapper
 
 
+def super_admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        user = get_current_user()
+        if not user or user.role != 'super_admin':
+            return jsonify({'error': 'Forbidden'}), 403
+        g.current_user = user
+        return f(*args, **kwargs)
+    return wrapper
+
+
 def pipeline_access_required(f):
     @wraps(f)
     def wrapper(pipeline_id, *args, **kwargs):
