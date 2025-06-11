@@ -28,4 +28,7 @@ def create_app(config_class=Config):
     from .auth import auth_bp
     app.register_blueprint(auth_bp)
 
+    from .pipelines import pipelines_bp
+    app.register_blueprint(pipelines_bp)
+
     return app

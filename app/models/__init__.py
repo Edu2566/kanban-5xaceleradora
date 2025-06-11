@@ -41,6 +41,7 @@ class Pipeline(db.Model):
     __tablename__ = 'pipelines'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.Integer)
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
 
     account = db.relationship('Account', back_populates='pipelines')
@@ -52,6 +53,7 @@ class Stage(db.Model):
     __tablename__ = 'stages'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.Integer)
     pipeline_id = db.Column(db.Integer, db.ForeignKey('pipelines.id'))
 
     pipeline = db.relationship('Pipeline', back_populates='stages')
