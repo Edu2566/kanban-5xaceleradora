@@ -65,6 +65,7 @@ class Negotiation(db.Model):
     __tablename__ = 'negotiations'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.Integer)
     stage_id = db.Column(db.Integer, db.ForeignKey('stages.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
 

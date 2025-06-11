@@ -26,6 +26,7 @@ def upgrade():
     op.create_table('pipelines',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
+    sa.Column('position', sa.Integer(), nullable=True),
     sa.Column('account_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -59,6 +60,7 @@ def upgrade():
     op.create_table('stages',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
+    sa.Column('position', sa.Integer(), nullable=True),
     sa.Column('pipeline_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['pipeline_id'], ['pipelines.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -66,6 +68,7 @@ def upgrade():
     op.create_table('negotiations',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=120), nullable=False),
+    sa.Column('position', sa.Integer(), nullable=True),
     sa.Column('stage_id', sa.Integer(), nullable=True),
     sa.Column('owner_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.user_id'], ),
