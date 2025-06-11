@@ -4,4 +4,5 @@ instance/
 *.pyo
 *.db
 ENV/
-venv/
+.venv/
+.gitignore

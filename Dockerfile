@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["waitress-serve", "--port=5000", "run:app"]
+CMD ["gunicorn", "--port=5000", "run:app"]
