@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<form id="login-form" class="form">
+  <label>Account ID<input type="text" name="account_id" required></label>
+  <label>User ID<input type="text" name="user_id" required></label>
+  <label>Email<input type="email" name="user_email" required></label>
+  <label>Name<input type="text" name="user_name" required></label>
+  <button type="submit">Login</button>
+</form>
+<div id="login-error" class="error"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  setupLogin();
+</script>
+{% endblock %}

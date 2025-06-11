@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+{% block title %}Pipelines{% endblock %}
+{% block content %}
+<div id="pipelines" class="pipelines"></div>
+<button onclick="showCreatePipeline()">New Pipeline</button>
+<div id="manage-error" class="error"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  loadPipelines();
+</script>
+{% endblock %}
