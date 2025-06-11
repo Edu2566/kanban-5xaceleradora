@@ -65,8 +65,13 @@ class Negotiation(db.Model):
     __tablename__ = 'negotiations'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.Integer)
     stage_id = db.Column(db.Integer, db.ForeignKey('stages.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    value = db.Column(db.Numeric(10, 2), default=0)
+    status = db.Column(db.String(20), default='open')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    closed_at = db.Column(db.DateTime)
 
     stage = db.relationship('Stage', back_populates='negotiations')
     owner = db.relationship('User')
@@ -76,6 +81,7 @@ class ApiKey(db.Model):
     __tablename__ = 'api_keys'
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(255), unique=True, nullable=False)
+    scopes = db.Column(db.String(255))
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

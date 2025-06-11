@@ -31,4 +31,7 @@ def create_app(config_class=Config):
     from .pipelines import pipelines_bp
     app.register_blueprint(pipelines_bp)
 
+    from .admin import admin_bp
+    app.register_blueprint(admin_bp)
+    
     return app

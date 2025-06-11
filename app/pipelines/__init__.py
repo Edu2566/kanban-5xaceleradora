@@ -184,4 +184,3 @@ def reorder_stages(pipeline_id):
         Stage.query.filter_by(id=sid).update({'position': position})
     db.session.commit()
     return '', 204
-
