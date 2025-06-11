@@ -41,6 +41,23 @@ docker-compose exec backend flask db upgrade
 
 This will create all required tables in the Postgres database.
 
+### Using SQLite for testing
+
+A separate `docker-compose.sqlite.yml` file can be used to run the API with
+SQLite instead of Postgres. Start the service with:
+
+```bash
+docker-compose -f docker-compose.sqlite.yml up --build
+```
+
+After the container is running apply the migrations:
+
+```bash
+docker-compose -f docker-compose.sqlite.yml exec backend flask db upgrade
+```
+
+This will create an `app.db` file inside the persistent volume.
+
 ## API usage
 
 ### Obtaining an API token via Chatwoot
