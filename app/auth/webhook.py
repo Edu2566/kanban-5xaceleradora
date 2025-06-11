@@ -6,11 +6,11 @@ from ..models import Account, User, ApiKey
 from . import auth_bp
 
 
-@auth_bp.route('/auth/webhook', methods=['POST'])
+@auth_bp.route('/auth/webhook', methods=['GET'])
 def auth_webhook():
-    data = request.get_json(silent=True)
-    if not data:
-        data = request.form.to_dict() if request.form else {}
+    # When Chatwoot triggers this webhook it now sends the data as query
+    # parameters in a GET request.  Parse the arguments accordingly.
+    data = request.args.to_dict()
     required_fields = ['account_id', 'user_id', 'user_email', 'user_name']
     missing = [field for field in required_fields if field not in data]
     if missing:

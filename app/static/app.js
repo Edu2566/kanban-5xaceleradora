@@ -8,11 +8,8 @@ function setupLogin() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(form));
-    const res = await fetch('/auth/webhook', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    const query = new URLSearchParams(data).toString();
+    const res = await fetch(`/auth/webhook?${query}`, { method: 'GET' });
     if (res.ok) {
       const json = await res.json();
       localStorage.setItem('apiToken', json.token);
