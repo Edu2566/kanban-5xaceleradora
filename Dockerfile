@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["gunicorn", "--port=5000", "run:app"]
+CMD ["gunicorn", "0.0.0.0=5000", "run:app"]
